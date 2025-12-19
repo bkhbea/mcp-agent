@@ -1,0 +1,93 @@
+import sqlite3
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("SQLLite3 DB Server")
+mcp.title = "Database MCP Server"
+mcp.version = "0.1.0"
+
+@mcp.tool()
+def create_user(name: str, email: str) -> dict:
+    """Create a new user and return their info."""
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO users (name, email) VALUES (?, ?)", (name, email))
+    conn.commit()
+    user_id = cursor.lastrowid
+    conn.close()
+    return {"id": user_id, "name": name, "email": email}
+
+@mcp.tool()
+def update_user(id: int, name: str | None = None, email: str | None = None) -> dict:
+    """Update user fields by ID. Return updated user info."""
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    updates = []
+    params = []
+
+    if name is not None:
+        updates.append("name = ?")
+        params.append(name)
+    if email is not None:
+        updates.append("email = ?")
+        params.append(email)
+    if not updates:
+        raise ValueError("No fields provided for update")
+    params.append(id)
+    sql = f"UPDATE users SET {', '.join(updates)} WHERE id = ?"
+    cursor.execute(sql, tuple(params))
+    conn.commit()
+
+    cursor.execute("SELECT id, name, email FROM users WHERE id = ?", (id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row is None:
+        raise ValueError(f"User {id} not found")
+    return {"id": row[0], "name": row[1], "email": row[2]}
+
+@mcp.tool()
+def delete_user(id: int) -> dict:
+    """Delete user by ID. Return deleted user ID."""
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM users WHERE id = ?", (id,))
+    row = cursor.fetchone()
+    if row is None:
+        conn.close()
+        raise ValueError(f"User {id} not found")
+    cursor.execute("DELETE FROM users WHERE id = ?", (id,))
+    conn.commit()
+    conn.close()
+    return {"deleted_id": row[0]}
+
+@mcp.tool()
+def list_users(name_filter: str | None = None, email_filter: str | None = None) -> list[dict]:
+    """Return users optionally filtered by name or email."""
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    sql = "SELECT id, name, email FROM users WHERE 1=1"
+    params = []
+    if name_filter:
+        sql += " AND name LIKE ?"
+        params.append(f"%{name_filter}%")
+    if email_filter:
+        sql += " AND email LIKE ?"
+        params.append(f"%{email_filter}%")
+    cursor.execute(sql, tuple(params))
+    rows = cursor.fetchall()
+    conn.close()
+    return [{"id": r[0], "name": r[1], "email": r[2]} for r in rows]
+
+@mcp.tool()
+def get_user_by_id(id: int) -> dict:
+    """Return a user by their ID."""
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name, email FROM users WHERE id = ?", (id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row is None:
+        raise ValueError(f"User {id} not found")
+    return {"id": row[0], "name": row[1], "email": row[2]}
+
+if __name__ == "__main__":
+    mcp.run(transport="stdio")
