@@ -9,7 +9,7 @@ import time
 DB_PARAMS = StdioServerParameters(
     name="db",
     command="python3",
-    args=["servers/updated_db_server.py"]  # adjust path as needed
+    args=["servers/db_server.py"]  # adjust path as needed
 )
 FILE_PARAMS = StdioServerParameters(
     name="file",
