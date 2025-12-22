@@ -9,7 +9,7 @@ import time
 DB_PARAMS = StdioServerParameters(
     name="db",
     command="python3",
-    args=["servers/updated_db_server.py"]  # adjust path as needed
+    args=["servers/db_server.py"]  # adjust path as needed
 )
 FILE_PARAMS = StdioServerParameters(
     name="file",
@@ -21,6 +21,8 @@ FILE_PARAMS = StdioServerParameters(
 def ask_llama(prompt: str, max_retries: int = 3) -> dict:   
     last_error = None
     """Call local LLaMA model via Ollama HTTP API and parse JSON output."""
+    print("Calling LLM with prompt:\n")
+    print(prompt)
     for attempt in range(1, max_retries + 1):
       try:
          response = requests.post(
@@ -34,7 +36,7 @@ def ask_llama(prompt: str, max_retries: int = 3) -> dict:
                                   "num_predict": 512
                                 }
                    },
-              timeout=600,
+              timeout=1200,
          )
          response.raise_for_status()
          response_text = response.json()["response"].strip()

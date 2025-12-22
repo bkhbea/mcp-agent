@@ -1,5 +1,6 @@
 import sqlite3
 from mcp.server.fastmcp import FastMCP
+import os
 
 mcp = FastMCP("SQLLite3 DB Server")
 mcp.title = "Database MCP Server"
@@ -8,7 +9,9 @@ mcp.version = "0.1.0"
 @mcp.tool()
 def create_user(name: str, email: str) -> dict:
     """Create a new user and return their info."""
-    conn = sqlite3.connect("users.db")
+    # Absolute path to users.db in the same folder as db_server.py
+    db_path = os.path.join(os.path.dirname(__file__), "users.db")
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("INSERT INTO users (name, email) VALUES (?, ?)", (name, email))
     conn.commit()
@@ -19,7 +22,8 @@ def create_user(name: str, email: str) -> dict:
 @mcp.tool()
 def update_user(id: int, name: str | None = None, email: str | None = None) -> dict:
     """Update user fields by ID. Return updated user info."""
-    conn = sqlite3.connect("users.db")
+    db_path = os.path.join(os.path.dirname(__file__), "users.db")
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     updates = []
     params = []
@@ -47,7 +51,8 @@ def update_user(id: int, name: str | None = None, email: str | None = None) -> d
 @mcp.tool()
 def delete_user(id: int) -> dict:
     """Delete user by ID. Return deleted user ID."""
-    conn = sqlite3.connect("users.db")
+    db_path = os.path.join(os.path.dirname(__file__), "users.db")
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM users WHERE id = ?", (id,))
     row = cursor.fetchone()
@@ -62,7 +67,8 @@ def delete_user(id: int) -> dict:
 @mcp.tool()
 def list_users(name_filter: str | None = None, email_filter: str | None = None) -> list[dict]:
     """Return users optionally filtered by name or email."""
-    conn = sqlite3.connect("users.db")
+    db_path = os.path.join(os.path.dirname(__file__), "users.db")
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     sql = "SELECT id, name, email FROM users WHERE 1=1"
     params = []
@@ -80,7 +86,8 @@ def list_users(name_filter: str | None = None, email_filter: str | None = None) 
 @mcp.tool()
 def get_user_by_id(id: int) -> dict:
     """Return a user by their ID."""
-    conn = sqlite3.connect("users.db")
+    db_path = os.path.join(os.path.dirname(__file__), "users.db")
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     cursor.execute("SELECT id, name, email FROM users WHERE id = ?", (id,))
     row = cursor.fetchone()
