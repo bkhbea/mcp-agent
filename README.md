@@ -36,4 +36,4 @@ To Run the exmaple:
 db_server.py - has all data access fucntion
 file_server.py - has all file actions.
 
-Noet : The Servers are started and shotdown by the agent.
+Noet : The Servers are started and shutdown by the agent.
