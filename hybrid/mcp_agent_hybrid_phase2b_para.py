@@ -1,5 +1,10 @@
 import asyncio
+import json
 from contracts import TOOL_CONTRACTS
+from mcp_agent_hybrid_phase3a import build_execution_dag
+from mcp_agent_hybrid_phase3a import print_ascii_dag
+from mcp_agent_hybrid_phase3b import build_execution_layers
+
 from mcp.client.stdio import stdio_client, StdioServerParameters
 from mcp.client.session import ClientSession
 
@@ -15,10 +20,16 @@ DB_PARAMS = StdioServerParameters(
 tool_call_lock = asyncio.Lock()
 # --------------------
 
-async def execute_step(step, db_session, tool_call_lock, max_retries=3):
+async def execute_step(step, db_session, max_retries=3):
     """
     Executes a single step (tool call) with optional retry for idempotent tools.
-    Preserves logging for Phase 2.
+
+    Responsibilities:
+    - Handles retries for idempotent tools
+    - Executes a single tool via MCP session
+    - Logging preserved for debugging
+
+    Layer-level parallelism is handled by the scheduler, not here.
     """
     tool_name = step["tool"]
     contract = TOOL_CONTRACTS[tool_name]
@@ -29,26 +40,33 @@ async def execute_step(step, db_session, tool_call_lock, max_retries=3):
         try:
             print(f"[DB] Executing tool '{tool_name}' with arguments: {step.get('arguments', {})}")
             
-            # serialize MCP writes
+            # Optional: serialize all MCP calls if needed
             async with tool_call_lock:
-            # Replace this with your actual Phase 2 tool execution
               result = await db_session.call_tool(
-                 tool_name, 
-                 arguments=step.get("arguments", {})
-            ) 
+                tool_name,
+                arguments=step.get("arguments", {})
+            )
 
-            print(f"[DB] Result for '{tool_name}': {result}")
+            # Pretty-print results
+            i = 0
+            if len(result.content) > 1:
+                print(f"[DB] Result for '{tool_name}':\n") 
+                for i in range (len(result.content)):
+                   print(f"{result.content[i].text}")
+                   i = i + 1
+            else:    
+                print(f"[DB] Result for '{tool_name}': {result.content[0].text}")
+               
             return result
 
         except Exception as e:
-            # Retry only if tool is idempotent
             if contract.idempotent and attempt < max_retries:
                 print(f"[DB] Retry {attempt}/{max_retries} for tool '{tool_name}' due to error: {e}")
-                await asyncio.sleep(0.1)  # small backoff
+                await asyncio.sleep(0.1)
                 continue
-            
-                # Non-idempotent tool or max retries reached
+            # Non-idempotent or retries exhausted
             raise
+
 
 async def execute_plan_parallel_safe(plan):
     """
@@ -57,61 +75,34 @@ async def execute_plan_parallel_safe(plan):
     - Non-commutative or conflicting tools run sequentially
     - Idempotent tools automatically retried on failure
     """
-    print("\n=== Executing Parallel Plan (Phase 2B) ===")
+    
+    print("------------ Building DAG --------" )
+    dag = build_execution_dag(plan)
+    
+    print("------------ Creating execution Layers --------" )
+    layers = build_execution_layers(dag)
+    
+    execution_error = None  # <- store errors here
+    print("\n---------- Executing Parallel Plan (Phase 2B) ------")
     async with stdio_client(DB_PARAMS) as (reader, writer):
         async with ClientSession(reader, writer) as db_session:
           db_metadata =  await db_session.initialize()
-          print("DB Server Metadata:", db_metadata)
-    # Track currently executing tasks
-        # keep in mind the following:
-        # The parallelism is Scheduler:    ──►  parallel task creation
-        # The actual execution is sequantial, why?
-        # We are using one client session
-        # One ClientSession = one writer = one in-flight request
-        executing = [] # serialized MCP calls (by necessity)
+          #print("DB Server Metadata:", db_metadata)
+          for layer in layers:
+            print(f"Executing layer: {layer}")
+            tasks = [execute_step(plan[i], db_session) for i in layer]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
 
-    for step in plan:
-          contract = TOOL_CONTRACTS[step["tool"]]
+            for r in results:
+                    if isinstance(r, BaseException):
+                        print("Captured task error:", repr(r))
+                        execution_error = r
+                        break
+            
+            if execution_error:
+                  break        
 
-        # Check if step can run in parallel with currently executing steps
-        # Core logic for parallelism:
-        # all(...) checks all currently executing tasks.
-        # We can run this step in parallel if:
-            # 1. The current tool is commutative (safe to run with others of same type).
-            # 2. The states it writes (writes) do not overlap with any currently executing step 
-            # (isdisjoint).
-        # If any running step conflicts (writes to the same DB state, or non-commutative), 
-        # can_parallel becomes False.
-          can_parallel = all(
-            contract.commutative and contract.writes.isdisjoint(
-                TOOL_CONTRACTS[s["step"]["tool"]].writes
-            )
-            for s in executing
-          )
-        # If safe to run in parallel:
-             #asyncio.create_task(execute_step(step)) schedules the async DB call 
-             # (Phase 2) without blocking.
-             # Append the step and its task to executing, so future steps can check for conflicts.
-          if can_parallel:
-             # Launch asynchronously and track the task
-            print(f"Parallel execution of \n {step}")
-            task = asyncio.create_task(execute_step(step,db_session))
-            executing.append({"step": step, "task": task})
-        
-            # If not safe to run in parallel, we must wait for all currently running steps to finish:
-            # asyncio.gather waits for all tasks in executing to complete.
-            # Reset executing to empty, since we now have no running parallel tasks.
-            # This ensures non-commutative or conflicting steps run sequentially.
-          else:
-            # Wait for all currently running tasks to finish
-            if executing:
-                await asyncio.gather(*(s["task"] for s in executing))
-                executing = []
+    
+        if execution_error:
+          raise execution_error  
 
-            # Execute this step sequentially
-            print(f"Sequential execution of \n {step}")
-            await execute_step(step)
-
-    # Wait for any remaining parallel tasks
-    if executing:
-        await asyncio.gather(*(s["task"] for s in executing))

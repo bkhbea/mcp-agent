@@ -1,7 +1,7 @@
 from dag_builder import *
 if __name__ == "__main__":
     plan = [
-        {"tool": "list_users"},
+        #{"tool": "list_users"},
         {"tool": "create_user", "arguments": {"name": "Alice"}},
         {"tool": "create_user", "arguments": {"name": "Bob"}},
         {"tool": "create_user", "arguments": {"name": "Charlie"}},

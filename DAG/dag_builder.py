@@ -52,7 +52,6 @@ def build_dag(plan: List[dict]) -> DAG:
 
     # Register all steps as nodes
     for i in range(len(plan)):
-        
         dag.add_node(i) 
     print(f"----- Number of Tasks in the plan: {i} -------") # number of 'tasks'
     # Compare every earlier step with every later step

@@ -14,27 +14,6 @@ DB_PARAMS = StdioServerParameters(
     command="python3",
     args=["servers/db_server.py"]  # adjust path as needed
 )
-"""
-def validate_step(step):
-    tool_name = step["tool"]
-    print(f"Tool/Resource validation:{tool_name}")
-    if tool_name not in TOOL_CONTRACTS:
-        raise ValueError(f"Unknown tool: {tool_name}")
-    contract = TOOL_CONTRACTS[tool_name]
-    arguments = step.get("arguments", {})  # <-- default empty dict, i.e. list_user
-
-    # Check arguments exist (optional deeper validation here)
-    if "arguments" not in step:
-        raise ValueError(f"Missing arguments for tool: {tool_name}")
-
-    # Further argument type validation could be added
-    return True
-
-def validate_plan(plan):
-    for step in plan:
-        validate_step(step)
-    return True
-"""
 # ----------------- Phase 2: Execute plan -----------------
 async def execute_plan(plan):
     """

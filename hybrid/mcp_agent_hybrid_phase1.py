@@ -107,19 +107,33 @@ async def main():
     plan = ask_llama_plan(prompt)
     print("\nFINAL PLAN:")
     print(json.dumps(plan, indent=2))
+    
     print('-------------- Phase 2A - LLM generated plan validation ---------')
     print("We validate the generated plan against the defined contract")
     validate_plan(plan)
     print("LLM Plan validation done")       
+    
     print("-------------- Phase 2B - DB tools execution -------------------")
-    #for step in plan:
-    #    print(f"Step : {step}\n")
     print("\n>>> Passing validated plan to Phase 2 for execution...\n")
     # --- Call Phase 2 ---
-    #await execute_plan(plan)
-    await execute_plan_parallel_safe(plan)
+    await execute_plan(plan)
+    #await execute_plan_parallel_safe(plan)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
 
+"""
+Phase 1  ──►  LLM Plan
+Phase 2A ──►  Contract Validation
+Phase 3A ──►  DAG Construction   ✅ (new)
+Phase 3B ──►  Scheduler (layers)
+Phase 2B ──►  Executor (MCP calls)
+
+| Phase | Responsibility                 | Code type         |
+| ----- | ------------------------------ | ----------------- |
+| 3A    | Build DAG from contracts       | Graph logic       |
+| 3B    | Convert DAG → execution layers | Topological logic |
+| 2B    | Execute layers                 | MCP / async       |
+
+"""
