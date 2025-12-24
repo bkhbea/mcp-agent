@@ -1,6 +1,9 @@
 import sqlite3
 
-conn = sqlite3.connect("users.db")
+import os
+os.makedirs("servers", exist_ok=True)
+
+conn = sqlite3.connect("servers/users.db")
 c = conn.cursor()
 
 # Create table

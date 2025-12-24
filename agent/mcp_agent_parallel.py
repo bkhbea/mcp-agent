@@ -317,8 +317,13 @@ You are an assistant that can call tools via MCP.
 - The response MUST end with a closing ] character.
 
 ### User request:
-Create a user named "Robert" with email "rob@example.com", 
-then list all users, write the list to 'user_list.json', then read it back. 
+create 3 users: 
+- A user named "Alice" with email "alice@example.com
+- A user  named "Bob" with email "bon@example.com"
+- A user  named "Charlie" with email "chuck@example.com". 
+- Once done, list all users from the database
+- Write the list to a file 'users_list.json'
+- Read the file you just created.  
 
 """
 
