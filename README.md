@@ -36,3 +36,7 @@ To Run the exmaple:
 db_server.py - has all data access fucntion
 file_server.py - has all file actions.
 
+<<<<<<< HEAD
+=======
+Noet : The Servers are started and shutdown by the agent.
+>>>>>>> 5d390477267fbee0ab80781c6017489abda0a8fc
