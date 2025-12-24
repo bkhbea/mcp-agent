@@ -36,14 +36,3 @@ To Run the exmaple:
 db_server.py - has all data access fucntion
 file_server.py - has all file actions.
 
-Noet : The Servers are started and shotdown by the agent.
-| Rule                    | Belongs in |
-| ----------------------- | ---------- |
-| Default filenames       | Agent      |
-| Forbidden extensions    | Agent      |
-| `/generated` sandbox    | Agent      |
-| Tool/server correctness | Contracts  |
-| JSON shape              | Contracts  |
-| Prompt verbosity        | Prompt     |
-
-ollama run llama3 --prompt "..." --stream
