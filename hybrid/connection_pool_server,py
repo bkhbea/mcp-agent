@@ -1,0 +1,42 @@
+from mcp.client.stdio import stdio_client, StdioServerParameters
+from mcp.client.session import ClientSession
+#from dataclasses import dataclass
+import asyncio
+
+# ----------------- Database server parameters -----------------
+DB_PARAMS = StdioServerParameters(
+    name="db",
+    command="python3",
+    args=["servers/db_server.py"]  # adjust path as needed
+)
+"""
+#@dataclass(frozen=True)
+class MCPConnectionPool:
+    def __init__(self, size: int):
+        self.size = size
+        self._queue = asyncio.Queue()
+
+    async def start(self):
+        print(f"String the connection pool server with {self.size} connections")
+        for _ in range(self.size):
+            reader, writer = await stdio_client(DB_PARAMS).__aenter__()
+            session = ClientSession(reader, writer)
+            await session.initialize()
+            await self._queue.put((session, reader, writer))
+        print(f"{self.size} in connection pool")    
+
+    async def acquire(self):
+        print("Getting a Session")
+        print(f"Number of Sessions currently in the pool : {self.size -1}")
+        return await self._queue.get()
+
+    async def release(self, session_tuple):
+        print("Session returned")
+        print(f"Number of Sessions currently in the pool : {self.size +1}")
+        await self._queue.put(session_tuple)
+
+    async def close(self):
+        while not self._queue.empty():
+            session, reader, writer = await self._queue.get()
+            await session.__aexit__(None, None, None)
+"""

@@ -1,6 +1,8 @@
 from mcp_agent_hybrid_phase2a import validate_plan
 from mcp_agent_hybrid_phase2b_para import execute_plan_parallel_safe
 from mcp_agent_hybrid_phase2b import execute_plan
+from mcp_agent_hybrid_pool import execute_plan_parallel_pool
+
 import asyncio
 
 plan = [
@@ -38,8 +40,9 @@ async def main():
    print("-------------- Phase 2B - DB tools execution -------------------")
    print("\n>>> Passing validated plan to Phase 2 for execution...\n")
     # --- Call Phase 2 ---
-   await execute_plan(plan)
+   #await execute_plan(plan)
    #await execute_plan_parallel_safe(plan)
+   await execute_plan_parallel_pool(plan)
 
 if __name__ == "__main__":
     asyncio.run(main())
