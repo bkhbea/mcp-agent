@@ -1,4 +1,5 @@
 import requests
+import json
 prompt = """
 You are an assistant that can call tools via MCP.
 
@@ -63,13 +64,21 @@ Create a user named "Robert" with email "rob@example.com",
 then list all users, write the list to 'user_list.json', then read it back. 
 
 """
-
 response = requests.post(
-  "http://localhost:11434/api/chat",
+  "http://localhost:11434/api/generate",
   json={
-    "model": "llama3",
-    "prompt": prompt,
-    "stream": False
-  }
-)
-print(response)
+                     "model": "llama3",  # your local model
+                     "prompt": prompt,
+                     "stream": False,    # simplified for MCP
+                     "options": {
+                                  "temperature": 0.0,
+                                  "num_predict": 512
+                                }
+                   },
+              timeout=1200,
+         )
+response.raise_for_status()
+response_text = response.json()["response"].strip()
+print(response_text)
+plan = json.loads(response.json()["response"])
+print(plan)

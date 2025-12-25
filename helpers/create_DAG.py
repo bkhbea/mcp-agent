@@ -1,5 +1,5 @@
 import networkx as nx
-from contracts import TOOL_CONTRACTS
+from hybrid.contracts import TOOL_CONTRACTS
 
 def build_execution_dag(plan):
     """

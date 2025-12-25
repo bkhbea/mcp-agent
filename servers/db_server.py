@@ -1,14 +1,39 @@
+import os
+import logging
+
+# Remove all existing handlers (especially StreamHandler -> stdout)
+# MCP stdio servers MUST own stdout exclusively
+# DO NOT USE the print() command here. 
+
+root = logging.getLogger()
+for h in list(root.handlers):
+    root.removeHandler(h)
+
+root.propagate = False
+
+file_handler = logging.FileHandler("example.log")
+file_handler.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter("%(levelname)s:%(name)s:%(message)s")
+file_handler.setFormatter(formatter)
+
+root.addHandler(file_handler)
+root.setLevel(logging.DEBUG)
+
+logger = logging.getLogger(__name__)
+logger.debug("DB SERVER STARTED")
+
 import sqlite3
 from mcp.server.fastmcp import FastMCP
-import os
 
-mcp = FastMCP("SQLLite3 DB Server")
+mcp = FastMCP("SQLite3 DB Server" , log_level="CRITICAL")    
 mcp.title = "Database MCP Server"
 mcp.version = "0.1.0"
 
 @mcp.tool()
 def create_user(name: str, email: str) -> dict:
     """Create a new user and return their info."""
+    logger.debug(f"Creating new user with name {name} and email: {email}")
     # Absolute path to users.db in the same folder as db_server.py
     db_path = os.path.join(os.path.dirname(__file__), "users.db")
     conn = sqlite3.connect(db_path)
@@ -96,5 +121,8 @@ def get_user_by_id(id: int) -> dict:
         raise ValueError(f"User {id} not found")
     return {"id": row[0], "name": row[1], "email": row[2]}
 
+
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")
+

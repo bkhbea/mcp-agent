@@ -1,4 +1,4 @@
-from contracts import TOOL_CONTRACTS
+from hybrid.contracts import TOOL_CONTRACTS
 
 def validate_step(step:dict):
     if "tool" not in step:
@@ -52,4 +52,3 @@ def validate_plan(plan:list):
     #for step in plan:
         validate_step(step)
     return True
-

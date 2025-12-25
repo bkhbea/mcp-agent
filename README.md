@@ -38,7 +38,3 @@ file_server.py - has all file actions.
 
 If you would like a real-world example agent with full like cycle, check '/hybrid/run.md'
 
-<<<<<<< HEAD
-=======
-Noet : The Servers are started and shutdown by the agent.
->>>>>>> 5d390477267fbee0ab80781c6017489abda0a8fc

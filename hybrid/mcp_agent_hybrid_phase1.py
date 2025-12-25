@@ -6,9 +6,12 @@ import json
 import requests
 import time
 import asyncio
-from mcp_agent_hybrid_phase2a import validate_plan
-from mcp_agent_hybrid_phase2b import execute_plan  # import Phase 2 executor
-from mcp_agent_hybrid_phase2b_para import execute_plan_parallel_safe
+#from hybrid.mcp_agent_hybrid_phase2a import validate_plan
+from helpers.validaters import validate_plan
+from hybrid.mcp_agent_hybrid_phase2b import execute_plan  # import Phase 2 executor
+#from helpers.create_DAG import build_execution_dag
+#from helpers.create_layers import build_execution_layers
+from hybrid.mcp_agent_hybrid_phase2b_para import execute_plan_parallel_safe
 
 #from contracts import TOOL_CONTRACTS
 
@@ -108,7 +111,7 @@ async def main():
     print("\nFINAL PLAN:")
     print(json.dumps(plan, indent=2))
     
-    print('-------------- Phase 2A - LLM generated plan validation ---------')
+    print('-------------- Phase 2 - LLM generated plan validation ---------')
     print("We validate the generated plan against the defined contract")
     validate_plan(plan)
     print("LLM Plan validation done")       
@@ -123,17 +126,4 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 
-"""
-Phase 1  ──►  LLM Plan
-Phase 2A ──►  Contract Validation
-Phase 3A ──►  DAG Construction   ✅ (new)
-Phase 3B ──►  Scheduler (layers)
-Phase 2B ──►  Executor (MCP calls)
 
-| Phase | Responsibility                 | Code type         |
-| ----- | ------------------------------ | ----------------- |
-| 3A    | Build DAG from contracts       | Graph logic       |
-| 3B    | Convert DAG → execution layers | Topological logic |
-| 2B    | Execute layers                 | MCP / async       |
-
-"""

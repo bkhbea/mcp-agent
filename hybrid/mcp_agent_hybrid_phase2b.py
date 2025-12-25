@@ -6,7 +6,7 @@ import asyncio
 
 from mcp.client.stdio import stdio_client, StdioServerParameters
 from mcp.client.session import ClientSession
-#from contracts import TOOL_CONTRACTS
+
 
 # ----------------- Database server parameters -----------------
 DB_PARAMS = StdioServerParameters(
@@ -42,17 +42,27 @@ async def execute_plan(plan):
                     result = await db_session.call_tool(tool, arguments=arguments)
 
                     # parse result chunks to JSON if available
-                    parsed_result = []
-                    for chunk in result.content:
-                        text = (chunk.text or "").strip()
-                        if text:
-                            try:
-                                parsed_result.append(json.loads(text))
-                            except json.JSONDecodeError:
-                                parsed_result.append(text)
+                    #parsed_result = []
+                    #for chunk in result.content:
+                    #    text = (chunk.text or "").strip()
+                    #    if text:
+                    #        try:
+                    #            parsed_result.append(json.loads(text))
+                    #        except json.JSONDecodeError:
+                    #            parsed_result.append(text)
 
-                    print(f"[DB] Result for '{tool}': {parsed_result}")
-
+                    #print(f"[DB] Result for '{tool}': {parsed_result}")
+                    # Pretty-print results
+                    i = 0
+                    if len(result.content) > 1:
+                       print(f"[DB] Result for '{tool}':\n") 
+                       for i in range (len(result.content)):
+                          print(f"{result.content[i].text}")
+                          i = i + 1
+                    else:    
+                       print(f"[DB] Result for '{tool}': {result.content[0].text}")
+               
+            
                 except Exception as e:
                     print(f"[DB] Tool '{tool}' failed: {e}")
 

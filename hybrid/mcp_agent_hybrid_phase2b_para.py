@@ -1,10 +1,11 @@
 import asyncio
 import json
-from contracts import TOOL_CONTRACTS
-from mcp_agent_hybrid_phase3a import build_execution_dag
-from mcp_agent_hybrid_phase3a import print_ascii_dag
-from mcp_agent_hybrid_phase3b import build_execution_layers
-
+from hybrid.contracts import TOOL_CONTRACTS
+#from hybrid.mcp_agent_hybrid_phase3a import build_execution_dag
+#from hybrid.mcp_agent_hybrid_phase3a import print_ascii_dag
+#from hybrid.mcp_agent_hybrid_phase3b import build_execution_layers
+from helpers.create_DAG import build_execution_dag
+from helpers.create_layers import build_execution_layers
 from mcp.client.stdio import stdio_client, StdioServerParameters
 from mcp.client.session import ClientSession
 
