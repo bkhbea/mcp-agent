@@ -17,20 +17,17 @@ from hybrid.mcp_agent_hybrid_phase2b_para import execute_plan_parallel_safe
 
 
 # ----------------- LLaMA HTTP API call -----------------
-def is_json_complete(text: str) -> bool:
-    stack = []
-    for c in text:
-        if c in "{[":
-            stack.append(c)
-        elif c == "}":
-            if not stack or stack[-1] != "{":
-                return False
-            stack.pop()
-        elif c == "]":
-            if not stack or stack[-1] != "[":
-                return False
-            stack.pop()
-    return len(stack) == 0
+# The below defintions is need to make sure that teh response is cleaned from any
+# comments that may be added by LLM
+def extract_json_array(raw: str):
+    start = raw.find("[")
+    end = raw.rfind("]")
+
+    if start == -1 or end == -1 or end < start:
+        raise ValueError(f"No JSON array found in LLM output:\n{raw}")
+
+    json_text = raw[start:end + 1]
+    return json.loads(json_text)
 
 
 def ask_llama_plan(prompt: str, max_retries: int = 3,token_size: int = 512):
@@ -55,6 +52,7 @@ def ask_llama_plan(prompt: str, max_retries: int = 3,token_size: int = 512):
             )
 
             response.raise_for_status()
+            """
             text = response.json()["response"].strip()
 
             if not is_json_complete(text):
@@ -64,7 +62,13 @@ def ask_llama_plan(prompt: str, max_retries: int = 3,token_size: int = 512):
             #print(">>> LLM PLAN RECEIVED")
             #print(json.dumps(plan, indent=2))
             return plan
-
+            """
+            response.raise_for_status()
+            raw = response.json()["response"]
+            plan = extract_json_array(raw)
+            print("LLM Plan (JSON):", json.dumps(plan, indent=2))
+            return plan 
+        
         except Exception as e:
             last_error = str(e)
             print(f"LLM call failed (attempt {attempt}): {last_error}")

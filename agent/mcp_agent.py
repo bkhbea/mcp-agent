@@ -146,7 +146,8 @@ then list all users, write the list to 'user_list.json', then read it back.
                     if step["type"] == "tool":
             # ---------------- DB tools ----------------
                        if step["server"] == "db":
-                           result = await db_session.call_tool(step["tool"], arguments=step["arguments"])
+                           result = await db_session.call_tool(step["tool"], 
+                                      arguments=step["arguments"])
                            if step["tool"] == "list_users":
                                #list_users_result = [json.loads(c.text) for c in result.content]
                                list_users_result = json.loads(result.content[0].text)

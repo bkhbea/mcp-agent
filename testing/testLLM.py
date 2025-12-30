@@ -13,8 +13,10 @@ You are an assistant that can call tools via MCP.
 }
 
 ### File tools (all on server "file"):
-- Write a file using the tool: write_file(path: str, content: str)
-- Read a file using a resource: file://<path>/
+{
+  "read_file": ["path"],
+  "write_file": ["path", "content"]
+}
 
 ### File write action MUST use:
 {
@@ -31,7 +33,11 @@ You are an assistant that can call tools via MCP.
 {
   "type": "resource",
   "server": "file",
-  "uri": "file://<file_path>/"
+  "tool": "read_file",
+  "arguments": {
+    "uri": "file://<file_path>/"  
+  }
+  
 }
 
 ### Database tool action MUST use:
@@ -43,26 +49,28 @@ You are an assistant that can call tools via MCP.
 }
 
 ### Rules:
-- Always respond ONLY in JSON (no explanations, no extra text)
+- STRICTLY FOLLOW THESE RULES AND IF YOU CANNOT, STOP AND STATE THE REASON 
+- Respond ONLY with valid JSON and ONLY JSON 
 - Respond as a JSON array of actions (tools or resources)
-- Never invent directories or files
-- Use only these available file paths exactly: 
-  - readme.txt
-  - welcome.txt
-  - notes/todo.txt
-- For multi-step tasks, do not embed raw JSON manually; the agent will handle serialization
-- Always call `write_file` on server "file"
-- Never call `write_file` on the DB server
-- Resource actions MUST use `"type": "resource"` and `"server": "file"`
-- Tool actions MUST use `"type": "tool"` and `"server"` matching the tool's server
-- For list_users output, the agent will capture the output and pass it as `content` to write_file
-- Do not include "tool": "resource" anywhere
-- The response MUST end with a closing ] character.
+- Each element MUST contain:
+  - "tool"
+  - "arguments"
+- Do NOT include comments
+- Do NOT include explanations
+- Do NOT invent tools
+- "arguments" MUST be a JSON object with named fields
+
 
 ### User request:
-Create a user named "Robert" with email "rob@example.com", 
-then list all users, write the list to 'user_list.json', then read it back. 
-
+1. Create 3 users:
+   - Alice (alice@example.com)
+   - Bob (bon@example.com)
+   - Charlie (chuck@example.com)
+2. Write Alice user and bob user to bob_alice.txt - This should happen ONLY in one step
+3. Write Charlie user to charlie.txt
+4. list all users
+5. Write users list to user_list.json
+6. read user_list.json
 """
 response = requests.post(
   "http://localhost:11434/api/generate",

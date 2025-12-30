@@ -1,4 +1,4 @@
-from hybrid.contracts import TOOL_CONTRACTS
+from helpers.contracts import TOOL_CONTRACTS
 
 def validate_step(step:dict):
     if "tool" not in step:
@@ -51,4 +51,5 @@ def validate_plan(plan:list):
             raise ValueError(f"Step {i} is not an object")
     #for step in plan:
         validate_step(step)
+    print("------- Plan is Valid -----")    
     return True
