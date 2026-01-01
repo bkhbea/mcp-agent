@@ -1,6 +1,5 @@
 from pathlib import Path
 from mcp.server.fastmcp import FastMCP
-import json
 
 mcp = FastMCP("File Server")
 mcp.title = "File MCP Server"
@@ -18,7 +17,7 @@ def read_file(path: str) -> str:
     return file_path.read_text(encoding="utf-8")
 
 @mcp.tool()
-def write_file(path: str, content) -> dict:
+def write_file(path: str, content: str) -> dict:
     """
     Write content to a file under BASE_DIR.
     Returns the file path and status.
@@ -26,11 +25,8 @@ def write_file(path: str, content) -> dict:
     file_path = (BASE_DIR / path).resolve()
     if BASE_DIR not in file_path.parents:
         raise ValueError(f"File not allowed: {path}")
-    if not isinstance(content, str):
-        content = json.dumps(content, indent=2) 
-    with open(path, "w") as f:
-        f.write(content)    
-    #file_path.write_text(content, encoding="utf-8")
+
+    file_path.write_text(content, encoding="utf-8")
     return {"path": path, "status": "ok"}
 
 

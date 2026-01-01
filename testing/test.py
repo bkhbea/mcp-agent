@@ -1,13 +1,14 @@
 
 #source ~/venvs/py310/bin/activate
-from hybrid.mcp_agent_hybrid_phase2b_para import execute_plan_parallel_safe
+#from hybrid.parallel_mcp_agent import execute_plan_parallel_safe
+from longraph.longraph_agent import execute_plan_parallel_safe 
 from helpers.normalize_results import normalize_results
 from helpers.validaters import validate_plan
 from helpers.create_DAG import build_execution_dag
 #from helpers.initial_RAG_creation import build_execution_dag
 from helpers.create_layers import build_execution_layers
 #from helpers.initial_create_layers import build_execution_layers
-from hybrid.mcp_agent_hybrid_phase2b import execute_plan
+#from hybrid.mcp_agent_hybrid_phase2b import execute_plan
 
 import json
 from pprint import pprint
@@ -55,7 +56,7 @@ You are an assistant that can call tools via MCP.
 ### Database tool action MUST use:
 {
   "type": "tool",
-  "server": "db",
+  "server": "db",langgraph.graph
   "tool": "<tool_name>",
   "arguments": { ... }
 }
@@ -147,7 +148,7 @@ plan = [
     "tool": "write_file",
     "arguments": {
       "path": "user_list.json",
-      "content": "{\"users\": [...]}"
+      "content": "..."
     }
   },
   {
@@ -159,17 +160,18 @@ plan = [
     }
   }
 ]
+
 async def main():
    
    print("------------ Validating plan----------")
    valid = validate_plan(plan)
    print(f"Plan valid ? {valid}")
-   print("----------- Generating DAG ---------")
-   dag = build_execution_dag(plan)
+   #print("----------- Generating DAG ---------")
+   #dag = build_execution_dag(plan)
    #print(f"Generated DAG:")
    #print(print_dag_nodes(dag))
-   print("----------- Generating Execuion Layers -------")
-   layers = build_execution_layers(dag)
+   #print("----------- Generating Execuion Layers -------")
+   #layers = build_execution_layers(dag)
    #print_layered_dag(layers)
    
    #print("------- Running the simplest agent --------")
@@ -177,6 +179,9 @@ async def main():
 
    #print("------- Running the Agent utilizing DAGand and Execution Layers --------")
    #result = await execute_plan_parallel_safe(plan)
+
+   print("------- Running Longraph as the execution engine")
+   result = await execute_plan_parallel_safe(plan)
    
    """
    In this example, result has basically a list of objects, 

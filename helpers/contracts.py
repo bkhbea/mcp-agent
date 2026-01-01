@@ -21,7 +21,7 @@ class ToolContract:
     required_args: Dict[str, Type]
     optional_args: Dict[str, Type] = None
 
-    # NEW: Dynamic state resolver
+    # Dynamic state resolver
     # Allows reads/writes to be computed from arguments at runtime
     state_resolver: Optional[Callable[[Dict], Dict[str, Set[str]]]] = None
 
@@ -32,7 +32,7 @@ class ToolContract:
 
 DB_USERS = "db.users"
 
-# NEW: File-level granularity (NOT directories)
+# File-level granularity (NOT directories)
 FS_FILE_PREFIX = "fs.file:"
 
 
@@ -52,7 +52,7 @@ CREATE_USER = ToolContract(
     reads=set(),
     writes={DB_USERS},
     idempotent=False,
-    commutative=True,   # NEW: safe to parallelize
+    commutative=True,   # safe to parallelize
     required_args={
         "name": str,
         "email": str,
@@ -130,7 +130,7 @@ WRITE_FILE = ToolContract(
     commutative=False,   # NEW: two writes to same file must serialize
     required_args={
         "path": str,
-        "content": str,
+        "content": object,  #allow dict / list / any
     },
     state_resolver=write_file_state_resolver,
 )

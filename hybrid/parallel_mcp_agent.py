@@ -26,12 +26,17 @@ FILE_PARAMS = StdioServerParameters(
 # Global lock: protects MCP ClientSession write stream
 tool_call_lock = asyncio.Lock()
 
+# ANSI color codes for terminal
+COLOR_RESET = "\033[0m"
+COLOR_DB = "\033[94m"    # Blue
+COLOR_FILE = "\033[92m"  # Green
+
 # ------------------------------------------------------------
 # NEW: server routing helper
 # ------------------------------------------------------------
 def get_session_for_step(step, db_session, file_session):
     """
-    New: Route execution to the correct MCP session based on step['server'].
+    Route execution to the correct MCP session based on step['server'].
     """
     server = step.get("server", "db")
     if server == "db":
@@ -42,25 +47,14 @@ def get_session_for_step(step, db_session, file_session):
         raise ValueError(f"Unknown server '{server}' in step: {step}")
 
 
+# ------------------------------------------------------------
+# Execute a single step (tool/resource)
+# ------------------------------------------------------------
 async def execute_step(step, db_session, file_session, max_retries=3):
     """
     Executes a single step (tool or resource) with optional retry.
-    Responsibilities:
-    - Select correct MCP server (DB / File)
-    - Handle retries for idempotent tools
-    - Execute exactly ONE step
-    - No DAG logic here
-      Executes a single step (tool or resource).
     """
-    # to avoid any path mismatch and for security reason, the file will be written in 
-    # a predefined secure directory. So this routine will extract the file name.
     def normalize_file_uri(path: str) -> str:
-        """
-        Normalize file URIs for MCP File Server:
-        - Strip trailing slash
-        - Ensure path is relative to file server root
-        - Do NOT convert to absolute filesystem paths
-        """
         path = path.rstrip("/")
         if path.startswith("file://"):
             path = path[len("file://"):]
@@ -68,29 +62,50 @@ async def execute_step(step, db_session, file_session, max_retries=3):
             path = parts[-1]
             print(f"=============== file://{path} ===================")
         return f"file://{path}"
-  
-    # NEW: distinguish execution type
+
     step_type = step.get("type", "tool")
     tool_name = step["tool"]
-    server = step.get("server")
 
-    # NEW: route session
     session = get_session_for_step(step, db_session, file_session)
-    
-    # NEW: resources are not retried
+
     if step_type == "resource":
         max_retries = 1
-    list_users_result = None
-    attempt = 0
-# ANSI color codes for terminal
-COLOR_RESET = "\033[0m"
-COLOR_DB = "\033[94m"    # Blue
-COLOR_FILE = "\033[92m"  # Green
 
+    attempt = 0
+    while True:
+        attempt += 1
+        try:
+            async with tool_call_lock:
+                if step_type == "tool":
+                    result = await session.call_tool(
+                        tool_name,
+                        arguments=step.get("arguments", {})
+                    )
+                elif step_type == "resource":
+                    result = await session.read_resource(
+                        normalize_file_uri(step["arguments"]["uri"])
+                    )
+                    print(f"-----------File Content from {step['arguments']['uri']}---------")
+                    for resource in result.contents:
+                        data = json.loads(resource.text)
+                        print(json.dumps(data, indent=2))
+                else:
+                    raise ValueError(f"Unknown step type: {step_type}")
+
+            return result  # Must return resolved result
+
+        except Exception as e:
+            if step_type == "tool" and attempt < max_retries:
+                print(f"[RETRY] {tool_name} ({attempt}) due to {e}")
+                await asyncio.sleep(0.1)
+                continue
+            raise
+
+
+# ------------------------------------------------------------
+# Utility: colorize nodes for terminal logging
+# ------------------------------------------------------------
 def colorize_node(node_idx, step):
-    """
-    Returns a color-coded string for a node based on its server.
-    """
     server = step.get("server", "db")
     text = f"{node_idx}: {step['tool']}"
     if server == "db":
@@ -100,21 +115,15 @@ def colorize_node(node_idx, step):
     return text
 
 
+# ------------------------------------------------------------
+# Execute the full plan with DAG-level fairness
+# ------------------------------------------------------------
 async def execute_plan_parallel_safe(plan):
-    """
-    Executes a validated plan while respecting the DAG:
-    - DAG defines ordering
-    - DAG-level fairness ensures root-to-leaf paths make progress
-    - execute_step handles retries + routing
-    - New: live, color-coded logging of node execution
-    """
     print("------------ Building DAG --------")
     dag = build_execution_dag(plan)
 
     print("------------ Creating execution Layers (for reference) --------")
     layers = build_execution_layers(dag)
-
-    print("\n---------- Executing Plan Topologically with DAG-level fairness ------")
 
     async with stdio_client(DB_PARAMS) as (db_r, db_w), \
                stdio_client(FILE_PARAMS) as (file_r, file_w):
@@ -122,8 +131,13 @@ async def execute_plan_parallel_safe(plan):
         async with ClientSession(db_r, db_w) as db_session, \
                    ClientSession(file_r, file_w) as file_session:
 
-            print("DB Server Metadata:", await db_session.initialize())
-            print("File Server Metadata:", await file_session.initialize())
+            # Safe pretty-print metadata
+            db_metadata = await db_session.initialize()
+            file_metadata = await file_session.initialize()
+            print("\nDB Server Metadata:")
+            print(json.dumps(vars(db_metadata), indent=2, default=str))
+            print("\nFile Server Metadata:")
+            print(json.dumps(vars(file_metadata), indent=2, default=str))
 
             # -----------------------------
             # DAG-level execution with live logging
@@ -181,6 +195,3 @@ async def execute_plan_parallel_safe(plan):
                 raise execution_error
 
             return results
-
-
-
